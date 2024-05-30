@@ -2,33 +2,23 @@ import numpy as np
 import matplotlib.pyplot as plt
 from dronehover.optimization import Hover
 
-from simevo.drone import Drone
-
+from simevo.phenotype import Phenotype
+from simevo.evolve import *
 num_propellers = 5
 num_attributes = 5  # arm length, arm angle, phi, theta, ccw/cw
 
-drone = Drone(num_propellers)
-drone.get_genotype()
-drone.get_phenotype()
+# Generate initial population
+pop_num = 20
+population = generate_population(pop_num, num_propellers)
 
-sim = Hover(drone)
+# # Evaluate and rank
+# population, fitness = evaluate_fitness(population, verbose=True)
 
-sim.compute_hover()
+# Genetic algorithm
+num_gen = 50
 
-fig, ax = plt.subplots()
-ax.set_aspect("equal", "box")
-for prop in drone.props:
-    loc = prop["loc"]
-    ax.plot([0, loc[0]], [0, loc[1]], "k")
-    ax.scatter(loc[0], loc[1], c="k")
-    if prop["dir"][-1] =="ccw":
-        col = "r"
-    else:
-        col = "b"
-    ax.plot(0.1016/2*np.cos(np.linspace(0, 2*np.pi))+loc[0], 0.1016/2*np.sin(np.linspace(0, 2*np.pi))+loc[1], col)
+population = genetic_algorithm(population, num_gen)
 
-ax.scatter(drone.cg[0], drone.cg[1], s=200, marker="o")
-
-plt.show()
-
-
+best_drone = Phenotype(population[0])
+best_drone.plot_drone()
+    

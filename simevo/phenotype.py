@@ -1,24 +1,23 @@
 import numpy as np
 from numpy.linalg import norm
+import matplotlib.pyplot as plt
 import numba
 
 from simevo.utils import linmap
 
-class Drone():
-    def __init__(self, num_propellers, num_attributes=5):
-        self.num_props = num_propellers
+class Phenotype():
+    def __init__(self, genotype, num_attributes=5):
+        self.num_props = int(len(genotype)/num_attributes)
         self.num_att = num_attributes
+        self.genotype = genotype
 
-
-    def get_genotype(self):
-        self.genotype = np.random.uniform(low=-1, high=1, size=self.num_props*self.num_att)
-
+        self.get_phenotype()
 
     def get_phenotype(self):
         arm_map     = [0.05, 0.3]
         angle_map   = [-np.pi, np.pi]
         phi_map     = [0, 15/180*np.pi] # Inclination
-        theta_map   = [-15/180*np.pi, 15/180*np.pi] # Azimuth
+        theta_map   = [-np.pi, np.pi] # Azimuth
 
         self.props  = []
 
@@ -36,7 +35,7 @@ class Drone():
             rotP    = "ccw" if np.sign(rotG) >= 0 else "cw"
 
             loc = [armP *np.cos(angleP), armP *np.sin(angleP), 0]
-            dir = [np.sin(phiP)*np.cos(thetaP), np.sin(phiP)*np.sin(thetaP), np.cos(phiP), rotP]
+            dir = [-np.sin(phiP)*np.cos(thetaP), -np.sin(phiP)*np.sin(thetaP), -np.cos(phiP), rotP]
 
             prop = {"loc": loc, "dir": dir, "constants": [7.24e-07, 8.20e-09], "wmax": 3927}
             self.props.append(prop)
@@ -88,6 +87,28 @@ class Drone():
             self.Iz += norm(np.cross(np.array([1,0,0]),r))**2 * prop_mass
 
         self.cg = self.cg.tolist()
+
+    def plot_drone(self):
+        fig, ax = plt.subplots()
+        ax.set_aspect("equal", "box")
+        for i, prop in enumerate(self.props):
+            loc = prop["loc"]
+            ax.plot([0, loc[0]], [0, loc[1]], "k")
+            ax.scatter(loc[0], loc[1], c="k")
+            if prop["dir"][-1] =="ccw":
+                col = "r"
+            else:
+                col = "b"
+            ax.plot(0.1016/2*np.cos(np.linspace(0, 2*np.pi))+loc[0], 0.1016/2*np.sin(np.linspace(0, 2*np.pi))+loc[1], col)
+
+            ax.text(loc[0], loc[1], f"{i}", fontsize=12, color='black')
+
+        ax.scatter(self.cg[0], self.cg[1], s=200, marker="x", color="red")
+        ax.text(self.cg[0], self.cg[1], "C.G.", fontsize=12, color='black')
+
+        plt.grid()
+        plt.show()
+
 
         
 
