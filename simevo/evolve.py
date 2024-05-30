@@ -6,24 +6,25 @@ from simevo.phenotype import Phenotype
 
 def generate_population(pop_size, num_propellers):
     population = []
-    for i in range(pop_size):
+    for _ in range(pop_size):
         genotype = get_genotype(num_propellers)
         population.append(genotype)
     return population
 
-def genetic_algorithm(population, num_gen, verbose=True):
+
+def genetic_algorithm(population, num_gen, verbose=True, eval_verbose=0):
     pop_size = len(population)
     for i in range(num_gen):
         new_pop = []
 
-        population, fitness = evaluate_fitness(population)
+        ranked_population, ranked_fitness = evaluate_fitness(population, verbose=eval_verbose)
 
         # Bring over the top individuals
         for j in range(10):
-            new_pop.append(population[j])
+            new_pop.append(ranked_population[j])
 
         while len(new_pop) < pop_size:
-            parent1, parent2 = roulette(population)
+            parent1, parent2 = roulette(ranked_population)
             child1, child2 = crossover(parent1, parent2)
             child1 = mutate(child1)
             new_pop.append(child1)
@@ -37,11 +38,11 @@ def genetic_algorithm(population, num_gen, verbose=True):
         population = new_pop
 
         if verbose:
-            print(f"Generation: {i}, Max fitness:{fitness[0]:.2f}")
+            print(f"Generation: {i+1}, Max fitness:{ranked_fitness[0]:.2f}\n")
 
     return population
 
-def evaluate_fitness(population, verbose=False):
+def evaluate_fitness(population, verbose=0):
     hover_status = []
     input_cost = []
     volume = []
@@ -70,19 +71,12 @@ def evaluate_fitness(population, verbose=False):
         sim = Hover(drone)
         sim.compute_hover()
 
-        fit = 0
         if sim.hover_status == "ST":
-            fit += 15
-            fit += 0.5/sim.input_cost
-            fit += sim.alpha
-            fit += 0.02/vol
+            fit = 15 + 0.5/sim.input_cost + sim.alpha + 0.02/vol
         elif sim.hover_status == "SP":
-            fit += 1
-            fit += 2/sim.input_cost
-            fit += sim.alpha
-            fit += 0.02/vol
+            fit = 0 + 0.5/sim.input_cost + sim.alpha + 0.02/vol
         elif sim.hover_status == "N":
-            fit += -5
+            fit = -5 + 0.02/vol
 
         hover_status.append(sim.hover_status)
         input_cost.append(sim.input_cost)
@@ -91,21 +85,24 @@ def evaluate_fitness(population, verbose=False):
         fitness.append(fit)
 
     # Order population
-    population_ordered = list(zip(population, fitness, hover_status, input_cost, volume, alpha))
+    population_ordered = zip(population, fitness, hover_status, input_cost, volume, alpha)
     population_ordered = sorted(population_ordered, key=lambda x: x[1], reverse=True)
     population, fitness, hover_status, input_cost, volume, alpha = zip(*population_ordered)
 
     population = list(population)
 
-    if verbose:
+    if verbose > 0:
+        print("=========================================================")
         print("|Drone\t|Hover\t|Cost\t|Vol\t|Alpha\t|Fitness\t|")
         print("=========================================================")
 
-        for idx, drone in enumerate(population):
+        for idx in range(verbose):
             if input_cost[idx] is not None:
-                print(f"|{idx}\t|{hover_status[idx]}\t|{input_cost[idx]:.3f}\t|{volume[idx]:.4f}\t|{alpha[idx]:.3f}\t|{fitness[idx]:.3f}\t\t|")
+                print(f"|{idx+1}\t|{hover_status[idx]}\t|{input_cost[idx]:.3f}\t|{volume[idx]:.4f}\t|{alpha[idx]:.3f}\t|{fitness[idx]:.3f}\t\t|")
             else:
-                print(f"|{idx}\t|{hover_status[idx]}\t|{input_cost[idx]}\t|{volume[idx]:.4f}\t|{alpha[idx]}\t|{fitness[idx]:.3f}\t\t|")
+                print(f"|{idx+1}\t|{hover_status[idx]}\t|{input_cost[idx]}\t|{volume[idx]:.4f}\t|{alpha[idx]}\t|{fitness[idx]:.3f}\t\t|")
+
+        print("---------------------------------------------------------")
 
     return population, fitness
 
