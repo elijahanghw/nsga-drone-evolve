@@ -1,10 +1,11 @@
 # Font sizes
 font.size : 12
-font.family : serif
+# font.family : sans-serif
 # font.serif : Times
 
 # Set default figure size
 figure.figsize : 6, 4.5
+# figure.dpi : 300
 
 # Set x axis
 xtick.direction : in
@@ -38,6 +39,10 @@ axes.grid : True
 
 # Scatter plots
 # scatter.marker : .
+
+# Always save as 'tight'
+savefig.bbox : tight
+savefig.pad_inches : 0.05
 
 # Use LaTeX for math formatting
 # text.usetex : True

@@ -1,18 +1,27 @@
 import os
 from time import time
 import numpy as np
+from scipy.stats import qmc
 from dronehover.optimization import Hover
 
 from simevo import min_props, max_props
 from simevo.genotype import get_genotype
 from simevo.phenotype import Phenotype
 
-def generate_population(pop_size, min_props=min_props, max_props=max_props):
+def generate_population_uniform(pop_size, min_props=min_props, max_props=max_props):
     population = []
     genotype_len = 5*min_props + (5+1)*(max_props-min_props)
     for _ in range(pop_size):
         genotype = get_genotype(genotype_len)
         population.append(genotype)
+    return population
+
+def generate_population_lhs(pop_size, min_props=min_props, max_props=max_props):
+    genotype_len = 5*min_props + (5+1)*(max_props-min_props)
+    sampler = qmc.LatinHypercube(genotype_len)
+    samples = sampler.random(pop_size)
+    population = qmc.scale(samples, -1 ,1)
+    population = list(population)
     return population
 
 
@@ -37,7 +46,7 @@ def genetic_algorithm(population, num_gen, verbose=True, eval_verbose=0, file_pa
             np.save(fit_path, np.asarray(ranked_fitness))
 
         # Bring over the top individuals
-        for j in range(5):
+        for j in range(int(pop_size*0.05)):
             new_pop.append(ranked_population[j])
 
         while len(new_pop) < pop_size:
@@ -67,6 +76,8 @@ def evaluate_fitness(population, verbose=0):
     input_cost = []
     volume = []
     alpha = []
+    ctrl = []
+    ctrl_eig = []
     fitness = []
     for idx, genotype in enumerate(population):
         drone = Phenotype(genotype)
@@ -91,41 +102,64 @@ def evaluate_fitness(population, verbose=0):
 
         sim = Hover(drone)
         sim.compute_hover()
+        
+        eig_m = sim.eig_m/1000
+
 
         if sim.hover_status == "ST":
-            fit = 10 - 50*sim.input_cost + sim.alpha + 0.01/vol
-        elif sim.hover_status == "SP":
-            fit = 0 - 50*sim.input_cost + sim.alpha + 0.01/vol
-        elif sim.hover_status == "N":
-            fit = -10 + 0.01/vol
+            fit = 10 - 50*sim.input_cost + sim.alpha - 500*vol + sim.rank_m + min(np.prod(sim.eig_m/1000000),3)
+            hover_status.append(sim.hover_status)
+            input_cost.append(sim.input_cost)
+            volume.append(vol)
+            alpha.append(sim.alpha)
+            ctrl.append(sim.rank_m)
+            ctrl_eig.append(min(np.prod(sim.eig_m/1000000),3))
+            fitness.append(fit)
 
-        hover_status.append(sim.hover_status)
-        input_cost.append(sim.input_cost)
-        volume.append(vol)
-        alpha.append(sim.alpha)
-        fitness.append(fit)
+        elif sim.hover_status == "SP":
+            fit = 0 - 50*sim.input_cost + sim.alpha - 500*vol
+            hover_status.append(sim.hover_status)
+            input_cost.append(sim.input_cost)
+            volume.append(vol)
+            alpha.append(sim.alpha)
+            ctrl.append(None)
+            ctrl_eig.append(None)
+            fitness.append(fit)
+
+        elif sim.hover_status == "N":
+            fit = -10 - 500*vol
+            hover_status.append(sim.hover_status)
+            input_cost.append(None)
+            volume.append(vol)
+            alpha.append(None)
+            ctrl.append(None)
+            ctrl_eig.append(None)
+            fitness.append(fit)
 
     # Order population
-    population_ordered = zip(population, fitness, hover_status, num_props, input_cost, volume, alpha)
+    population_ordered = zip(population, fitness, hover_status, num_props, input_cost, volume, alpha, ctrl, ctrl_eig)
     population_ordered = sorted(population_ordered, key=lambda x: x[1], reverse=True)
-    population, fitness, hover_status, num_props, input_cost, volume, alpha = zip(*population_ordered)
+    population, fitness, hover_status, num_props, input_cost, volume, alpha, ctrl, ctrl_eig = zip(*population_ordered)
 
     population = list(population)
     fitness = list(fitness)
 
     if verbose > 0:
         print(f"Top {verbose} individuals:")
-        print("=================================================================")
-        print("|Drone\t|#Props\t|Hover\t|Cost\t|Vol\t|Alpha\t|Fitness\t|")
-        print("=================================================================")
+        print("=================================================================================")
+        print("|Drone\t|#Props\t|Hover\t|Cost\t|Vol\t|Alpha\t|CTRL+eig\t|Fitness\t|")
+        print("=================================================================================")
 
         for idx in range(verbose):
             if input_cost[idx] is not None:
-                print(f"|{idx+1}\t|{num_props[idx]}\t|{hover_status[idx]}\t|{input_cost[idx]:.3f}\t|{volume[idx]:.4f}\t|{alpha[idx]:.3f}\t|{fitness[idx]:.2f}\t\t|")
+                if ctrl[idx] is not None:
+                    print(f"|{idx+1}\t|{num_props[idx]}\t|{hover_status[idx]}\t|{input_cost[idx]:.3f}\t|{volume[idx]:.4f}\t|{alpha[idx]:.3f}\t|{ctrl[idx]}+{ctrl_eig[idx]:.3f}\t|{fitness[idx]:.2f}\t\t|")
+                else:
+                    print(f"|{idx+1}\t|{num_props[idx]}\t|{hover_status[idx]}\t|{input_cost[idx]:.3f}\t|{volume[idx]:.4f}\t|{alpha[idx]:.3f}\t|{ctrl[idx]}\t\t|{fitness[idx]:.2f}\t\t|")
             else:
-                print(f"|{idx+1}\t|{num_props[idx]}\t|{hover_status[idx]}\t|{input_cost[idx]}\t|{volume[idx]:.4f}\t|{alpha[idx]}\t|{fitness[idx]:.2f}\t\t|")
+                print(f"|{idx+1}\t|{num_props[idx]}\t|{hover_status[idx]}\t|{input_cost[idx]}\t|{volume[idx]:.4f}\t|{alpha[idx]}\t|{ctrl[idx]}\t\t|{fitness[idx]:.2f}\t\t|")
 
-        print("-----------------------------------------------------------------")
+        print("---------------------------------------------------------------------------------")
 
     return population, fitness
 

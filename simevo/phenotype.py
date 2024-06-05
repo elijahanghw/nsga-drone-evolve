@@ -1,6 +1,7 @@
 import numpy as np
 from numpy.linalg import norm
 import matplotlib.pyplot as plt
+from matplotlib.lines import Line2D
 import numba
 
 from simevo.utils import linmap
@@ -22,7 +23,7 @@ class Phenotype():
         # phi_map     = [0, np.pi/2] # Inclination
         # theta_map   = [-np.pi/2, np.pi/2] # Azimuth
 
-        arm_map     = [0.05, 0.5]
+        arm_map     = [0.1, 0.5]
         angle_map   = [-np.pi, np.pi]
         phi_map     = [0, 15/180*np.pi] # Inclination
         theta_map   = [-np.pi, np.pi] # Azimuth
@@ -126,22 +127,34 @@ class Phenotype():
 
         self.cg = self.cg.tolist()
 
-    def plot_drone(self):
+    def plot_drone(self, quiver=False):
         fig, ax = plt.subplots()
-        ax.set_aspect("equal", "box")
+        
         for i, prop in enumerate(self.props):
             loc = prop["loc"]
+            dir = prop["dir"]
             ax.plot([0, loc[1]], [0, loc[0]], "k")
             ax.scatter(loc[1], loc[0], c="k")
+            if quiver:
+                ax.arrow(loc[1], loc[0], dir[1], dir[0], color="green", linestyle="--")
             if prop["dir"][-1] =="ccw":
                 col = "r"
             else:
                 col = "b"
             ax.plot( 0.1016/2*np.sin(np.linspace(0, 2*np.pi))+loc[1], 0.1016/2*np.cos(np.linspace(0, 2*np.pi))+loc[0], col)
+            
 
             ax.text(loc[1], loc[0], f"{i}", fontsize=12, color='black')
 
         ax.scatter(self.cg[1], self.cg[0], s=200, marker="x", color="red")
         ax.text(self.cg[1], self.cg[0], "C.G.", fontsize=12, color='black')
-        plt.xlabel("y")
-        plt.ylabel("x")
+
+        ccw = Line2D([0], [0], color='r', label="CCW")
+        cw = Line2D([0], [0], color='b', label="CCW")
+        arrow = Line2D([0], [0], linestyle="--", color="green")
+
+        ax.legend([ccw, cw, arrow], ["CCW", "CW", "Direction"], loc="lower left")
+        ax.set_xlabel("y")
+        ax.set_ylabel("x")
+
+        ax.set_aspect("equal", "box")
