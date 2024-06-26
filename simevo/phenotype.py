@@ -152,8 +152,11 @@ class Phenotype():
         ccw = Line2D([0], [0], color='r', label="CCW")
         cw = Line2D([0], [0], color='b', label="CCW")
         arrow = Line2D([0], [0], linestyle="--", color="green")
-
-        ax.legend([ccw, cw, arrow], ["CCW", "CW", "Direction"], loc="lower left")
+        
+        if quiver:
+            ax.legend([ccw, cw, arrow], ["CCW", "CW", "Direction"], loc="lower left")
+        else:
+            ax.legend([ccw, cw, arrow], ["CCW", "CW"], loc="lower left")
         ax.set_xlabel("y")
         ax.set_ylabel("x")
 

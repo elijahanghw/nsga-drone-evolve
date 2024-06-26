@@ -82,59 +82,15 @@ def evaluate_fitness(population, verbose=0):
     for idx, genotype in enumerate(population):
         drone = Phenotype(genotype)
         num_props.append(len(drone.props))
-        # Compute size of bounding box
-        points = []
-        for prop in drone.props:
-            points.append(prop["loc"])
 
-        points = np.array(points)
-        min_coords = np.min(points, axis=0)
-        max_coords = np.max(points, axis=0)
-        dim = max_coords - min_coords
-        if dim[0] == 0:     # Add 5cm thickness to "planar" builds
-            dim[0] = 0.05
-        if dim[1] == 0:     # Add 5cm thickness to "planar" builds
-            dim[1] = 0.05
-        if dim[2] == 0:     # Add 5cm thickness to "planar" builds
-            dim[2] = 0.05
- 
-        vol = np.prod(dim)
-
-        sim = Hover(drone)
-        sim.compute_hover()
-        
-        eig_m = sim.eig_m/1000
-
-
-        if sim.hover_status == "ST":
-            fit = 10 - 50*sim.input_cost + sim.alpha - 500*vol + sim.rank_m + min(np.prod(sim.eig_m/1000000),3)
-            hover_status.append(sim.hover_status)
-            input_cost.append(sim.input_cost)
-            volume.append(vol)
-            alpha.append(sim.alpha)
-            ctrl.append(sim.rank_m)
-            ctrl_eig.append(min(np.prod(sim.eig_m/1000000),3))
-            fitness.append(fit)
-
-        elif sim.hover_status == "SP":
-            fit = 0 - 50*sim.input_cost + sim.alpha - 500*vol
-            hover_status.append(sim.hover_status)
-            input_cost.append(sim.input_cost)
-            volume.append(vol)
-            alpha.append(sim.alpha)
-            ctrl.append(None)
-            ctrl_eig.append(None)
-            fitness.append(fit)
-
-        elif sim.hover_status == "N":
-            fit = -10 - 500*vol
-            hover_status.append(sim.hover_status)
-            input_cost.append(None)
-            volume.append(vol)
-            alpha.append(None)
-            ctrl.append(None)
-            ctrl_eig.append(None)
-            fitness.append(fit)
+        fit, sim, vol = fitness_function(drone)
+        hover_status.append(sim.hover_status)
+        input_cost.append(sim.input_cost)
+        volume.append(vol)
+        alpha.append(sim.alpha)
+        ctrl.append(sim.rank_m)
+        ctrl_eig.append(min(np.prod(sim.eig_m/1000000),3))
+        fitness.append(fit)
 
     # Order population
     population_ordered = zip(population, fitness, hover_status, num_props, input_cost, volume, alpha, ctrl, ctrl_eig)
@@ -163,6 +119,38 @@ def evaluate_fitness(population, verbose=0):
 
     return population, fitness
 
+def fitness_function(drone):
+    # Compute size of bounding box: Now just x-y-z, to use PCA in future
+    points = []
+    for prop in drone.props:
+        points.append(prop["loc"])
+
+    points = np.array(points)
+    min_coords = np.min(points, axis=0)
+    max_coords = np.max(points, axis=0)
+    dim = max_coords - min_coords
+    if dim[0] == 0:     # Add 5cm thickness to "planar" builds
+        dim[0] = 0.05
+    if dim[1] == 0:     # Add 5cm thickness to "planar" builds
+        dim[1] = 0.05
+    if dim[2] == 0:     # Add 5cm thickness to "planar" builds
+        dim[2] = 0.05
+
+    vol = np.prod(dim)
+
+    sim = Hover(drone)
+    sim.compute_hover()
+
+    if sim.hover_status == "ST":
+        fit = 10 - 50*sim.input_cost + sim.alpha - 500*vol + sim.rank_m + min(np.prod(sim.eig_m/1000000),3)
+
+    elif sim.hover_status == "SP":
+        fit = 0 - 50*sim.input_cost + sim.alpha - 500*vol
+
+    elif sim.hover_status == "N":
+        fit = -10 - 500*vol
+
+    return fit, sim, vol
 
 def crossover(parent1, parent2):
     c_point = np.random.randint(1,parent1.shape[0]-2)
