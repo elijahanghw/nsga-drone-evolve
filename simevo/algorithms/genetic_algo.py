@@ -1,31 +1,15 @@
 import os
 from time import time
 import numpy as np
-from scipy.stats import qmc
+from multiprocessing import Pool
+from signal import signal, SIGINT
 from dronehover.optimization import Hover
 
-from simevo import min_props, max_props
-from simevo.genotype import get_genotype
 from simevo.phenotype import Phenotype
-
-def generate_population_uniform(pop_size, min_props=min_props, max_props=max_props):
-    population = []
-    genotype_len = 5*min_props + (5+1)*(max_props-min_props)
-    for _ in range(pop_size):
-        genotype = get_genotype(genotype_len)
-        population.append(genotype)
-    return population
-
-def generate_population_lhs(pop_size, min_props=min_props, max_props=max_props):
-    genotype_len = 5*min_props + (5+1)*(max_props-min_props)
-    sampler = qmc.LatinHypercube(genotype_len)
-    samples = sampler.random(pop_size)
-    population = qmc.scale(samples, -1 ,1)
-    population = list(population)
-    return population
+from simevo.algorithms.ga_utils import *
 
 
-def genetic_algorithm(population, num_gen, verbose=True, eval_verbose=0, file_path=None):
+def genetic_algorithm(population, num_gen, verbose=True, eval_verbose=0, file_path=None, parallel=True):
     print("Starting genetic algorithm...\n")
     start_time = time()
     if file_path is not None:
@@ -37,7 +21,7 @@ def genetic_algorithm(population, num_gen, verbose=True, eval_verbose=0, file_pa
     for i in range(num_gen):
         new_pop = []
 
-        ranked_population, ranked_fitness = evaluate_fitness(population, verbose=eval_verbose)
+        ranked_population, ranked_fitness = evaluate_fitness(population, verbose=eval_verbose, parallel=parallel)
 
         if file_path is not None:
             pop_path = os.path.join(file_path, "population", f"population{i}.npy")
@@ -46,7 +30,7 @@ def genetic_algorithm(population, num_gen, verbose=True, eval_verbose=0, file_pa
             np.save(fit_path, np.asarray(ranked_fitness))
 
         # Bring over the top individuals
-        for j in range(int(pop_size*0.05)):
+        for j in range(int(pop_size*0.02)):
             new_pop.append(ranked_population[j])
 
         while len(new_pop) < pop_size:
@@ -68,29 +52,36 @@ def genetic_algorithm(population, num_gen, verbose=True, eval_verbose=0, file_pa
 
     print(f"Finished. Total elapsed time: {time()-start_time}")
 
-    # return population
+def evaluate_fitness(population, verbose=0, parallel=True):
+    if parallel:
+        with Pool(20, initializer=initializer) as pool: 
+            drones = pool.map(geno_to_pheno, population)
+            results = pool.map(fitness_function, drones)
+            fitness, hover_status, input_cost, alpha, ctrl, ctrl_eig, volume = zip(*results)
 
-def evaluate_fitness(population, verbose=0):
-    hover_status = []
-    num_props = []
-    input_cost = []
-    volume = []
-    alpha = []
-    ctrl = []
-    ctrl_eig = []
-    fitness = []
-    for idx, genotype in enumerate(population):
-        drone = Phenotype(genotype)
-        num_props.append(len(drone.props))
+        num_props = [len(drone.props) for drone in drones]
 
-        fit, sim, vol = fitness_function(drone)
-        hover_status.append(sim.hover_status)
-        input_cost.append(sim.input_cost)
-        volume.append(vol)
-        alpha.append(sim.alpha)
-        ctrl.append(sim.rank_m)
-        ctrl_eig.append(min(np.prod(sim.eig_m/1000000),3))
-        fitness.append(fit)
+    else:
+        hover_status = []
+        num_props = []
+        input_cost = []
+        volume = []
+        alpha = []
+        ctrl = []
+        ctrl_eig = []
+        fitness = []
+        for idx, genotype in enumerate(population):
+            drone = Phenotype(genotype)
+            num_props.append(len(drone.props))
+
+            _fitness, _hover_status, _input_cost, _alpha, _ctrl, _ctrl_eig, _volume = fitness_function(drone)
+            hover_status.append(_hover_status)
+            input_cost.append(_input_cost)
+            volume.append(_volume)
+            alpha.append(_alpha)
+            ctrl.append(_ctrl)
+            ctrl_eig.append(_ctrl_eig)
+            fitness.append(_fitness)
 
     # Order population
     population_ordered = zip(population, fitness, hover_status, num_props, input_cost, volume, alpha, ctrl, ctrl_eig)
@@ -143,57 +134,20 @@ def fitness_function(drone):
 
     if sim.hover_status == "ST":
         fit = 10 - 50*sim.input_cost + sim.alpha - 500*vol + sim.rank_m + min(np.prod(sim.eig_m/1000000),3)
+        return [fit, sim.hover_status, sim.input_cost, sim.alpha, sim.rank_m, min(np.prod(sim.eig_m/1000000),3), vol]
 
     elif sim.hover_status == "SP":
         fit = 0 - 50*sim.input_cost + sim.alpha - 500*vol
+        return [fit, sim.hover_status, sim.input_cost, sim.alpha, None, None, vol]
 
     elif sim.hover_status == "N":
         fit = -10 - 500*vol
+        return [fit, sim.hover_status, None, None, None, None, vol]
 
-    return fit, sim, vol
 
-def crossover(parent1, parent2):
-    c_point = np.random.randint(1,parent1.shape[0]-2)
-    child1 = np.zeros_like(parent1)
-    child2 = np.zeros_like(parent2)
+def geno_to_pheno(genotype):
+    drone = Phenotype(genotype)
+    return drone
 
-    child1[0:c_point] = parent1[0:c_point]
-    child1[c_point:] = parent2[c_point:]
-
-    child2[0:c_point] = parent2[0:c_point]
-    child2[c_point:] = parent1[c_point:]
-
-    return child1, child2
-
-def mutate(child, sigma=0.05):
-    mut = np.random.uniform(0,1)
-    if mut < sigma:
-        mut_val = np.random.uniform(-0.2, 0.2, size=child.shape[0])
-        mask = np.random.randint(0, 2, size=child.shape[0])
-        child = child + mask*mut_val
-        child = np.clip(child, -1, 1)
-    return child
-
-def roulette(population, fitness):
-    roulette_pop = population.copy()
-    roulette_fit = fitness.copy()
-    selections = []
-    for _ in range(2):
-        min_fitness = min(roulette_fit)
-        shifted_fit = roulette_fit - min_fitness
-
-        normalized_fitness = shifted_fit/sum(shifted_fit)
-        
-        cumulative_probabilities = np.cumsum(normalized_fitness)
-
-        r = np.random.uniform(low=0, high=1)
-
-        for i, prob in enumerate(cumulative_probabilities):
-                if r < prob:
-                    selected_individual = roulette_pop.pop(i)
-                    _ = roulette_fit.pop(i)
-                    selections.append(selected_individual)
-                    break
-
-    parent1, parent2 = selections
-    return parent1, parent2
+def initializer():
+    signal(SIGINT, lambda: None)

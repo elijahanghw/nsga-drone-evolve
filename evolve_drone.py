@@ -1,14 +1,14 @@
-from dronehover.optimization import Hover
+import os
+from simevo.population import generate_population_lhs
+from simevo.algorithms.genetic_algo import genetic_algorithm
+from simevo.algorithms.moga import moga
 
-from simevo.phenotype import Phenotype
-from simevo.evolve import *
+pop_num = 50
+num_gen = 50
 
-pop_num = 200
-num_gen = 500
+root_path = "./Logs/moga_test/"
 
-root_path = "./Logs/series7/"
-
-for i in range(1,11):
+for i in range(1,2):
     print(f"Run number {i}...")
     save_path = os.path.join(root_path, f"run{i}")
     if not os.path.exists(save_path):
@@ -17,4 +17,4 @@ for i in range(1,11):
     # Generate initial population
     population = generate_population_lhs(pop_num)
     # Evolve drone
-    genetic_algorithm(population, num_gen, eval_verbose=20, file_path=save_path)
+    moga(population, num_gen, eval_verbose=0, file_path=save_path)
