@@ -69,7 +69,7 @@ def moga(population, num_gen, verbose=True, eval_verbose=0, file_path=None, para
             np.save(drone_path, np.asarray(static_drone))
 
             objectives = pd.DataFrame({"alpha": static_alpha, "volume": static_vol, "dominated": dominated})
-            objective_path = os.path.join(file_path, "objective", f"objective.csv") 
+            objective_path = os.path.join(file_path, "objective", f"objective{i}.csv") 
             objectives.to_csv(objective_path, index=False)
 
         pareto_drone = [static_drone[i] for i in range(len(static_drone)) if not dominated[i]]
