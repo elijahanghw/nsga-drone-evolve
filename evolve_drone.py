@@ -3,10 +3,10 @@ from simevo.population import generate_population_lhs
 from simevo.algorithms.genetic_algo import genetic_algorithm
 from simevo.algorithms.moga import moga
 
-pop_num = 50
-num_gen = 50
+pop_num = 100
+num_gen = 200
 
-root_path = "./Logs/moga_test/"
+root_path = "./Logs/test/moga_test/"
 
 for i in range(1,2):
     print(f"Run number {i}...")

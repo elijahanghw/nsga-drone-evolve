@@ -1,6 +1,7 @@
 import os
 from time import time
 import numpy as np
+import pandas as pd
 from multiprocessing import Pool
 from signal import signal, SIGINT
 from dronehover.optimization import Hover
@@ -12,15 +13,20 @@ def initializer():
     signal(SIGINT, lambda: None)
 
 def moga(population, num_gen, verbose=True, eval_verbose=0, file_path=None, parallel=True):
-    print("Starting genetic algorithm...\n")
+    print("Starting MOGA...\n")
     start_time = time()
     if file_path is not None:
         if not os.path.exists(os.path.join(file_path, "population")):
             os.mkdir(os.path.join(file_path, "population"))
-        if not os.path.exists(os.path.join(file_path, "fitness")):
-            os.mkdir(os.path.join(file_path, "fitness"))
+        if not os.path.exists(os.path.join(file_path, "drone")):
+            os.mkdir(os.path.join(file_path, "drone"))
+        if not os.path.exists(os.path.join(file_path, "objective")):
+            os.mkdir(os.path.join(file_path, "objective"))
+
     pop_size = len(population)
+
     for i in range(num_gen):
+
         new_pop = []
 
         if parallel:
@@ -54,6 +60,24 @@ def moga(population, num_gen, verbose=True, eval_verbose=0, file_path=None, para
         objective_values = list(zip(hover_status, input_cost, alpha, ctrl, ctrl_eig, volume))
 
         # Save pareto optimal results
+        static_drone, static_alpha, static_vol, dominated = pareto_front(population, objective_values)
+        if file_path is not None:
+            pop_path = os.path.join(file_path, "population", f"population{i}.npy") 
+            np.save(pop_path, np.asarray(population))
+
+            drone_path = os.path.join(file_path, "drone", f"drone{i}.npy") 
+            np.save(drone_path, np.asarray(static_drone))
+
+            objectives = pd.DataFrame({"alpha": static_alpha, "volume": static_vol, "dominated": dominated})
+            objective_path = os.path.join(file_path, "objective", f"objective.csv") 
+            objectives.to_csv(objective_path, index=False)
+
+        pareto_drone = [static_drone[i] for i in range(len(static_drone)) if not dominated[i]]
+        pareto_alpha = [static_alpha[i] for i in range(len(static_drone)) if not dominated[i]]
+        pareto_vol = [static_vol[i] for i in range(len(static_drone)) if not dominated[i]]
+
+        N_pareto = 1 + int(len(pareto_drone)*0.2)
+        new_pop = pareto_drone[0:N_pareto]
 
         while len(new_pop) < pop_size:
             ranked_population, ranked_fitness = moga_fitness(population, objective_values)
@@ -71,7 +95,7 @@ def moga(population, num_gen, verbose=True, eval_verbose=0, file_path=None, para
         population = new_pop
 
         if verbose:
-            print(f"Generation:{i+1}, Max fitness:{ranked_fitness[0]:.2f}, Mean fitness:{np.mean(ranked_fitness):.2f},  Current elapsed time:{time()-start_time} \n")
+            print(f"Generation:{i+1}, Max fitness:{ranked_fitness[0]:.2f}, Mean fitness:{np.mean(ranked_fitness):.2f}, Num static:{len(static_drone)},  Current elapsed time:{time()-start_time} \n")
 
     print(f"Finished. Total elapsed time: {time()-start_time}")
 
@@ -79,7 +103,7 @@ def moga_fitness(population, objective_values, verbose=0, parallel=True):
     hover_status, _, alpha, _, _, volume = zip(*objective_values)
     fitness = []
 
-    weights = np.random.uniform(low=0, high=1, size=3)
+    weights = np.random.uniform(low=0, high=1, size=2)
     weights = weights/np.linalg.norm(weights)
 
     for i, _ in enumerate(population):
@@ -88,12 +112,12 @@ def moga_fitness(population, objective_values, verbose=0, parallel=True):
             alpha_score = alpha[i]
         elif hover_status[i] == "SP":
             hover_score = 0
-            alpha_score = 0
+            alpha_score = alpha[i]
         elif hover_status[i] == "N":
             hover_score = -10
             alpha_score = 0
 
-        fitness.append(weights[0]*hover_score + weights[1]*alpha_score + weights[2]*volume[i])
+        fitness.append(hover_score + weights[0]*0.5*alpha_score - weights[1]*1000*volume[i])
 
     # Order population
     population_ordered = zip(population, fitness)
@@ -130,15 +154,12 @@ def objective_functions(drone):
     weights = np.random.uniform(low=0, high=1, size=2)
     weights = weights/np.linalg.norm(weights)
     if sim.hover_status == "ST":
-        # fit = 10 - 100*sim.input_cost + weights[0]*0.5*sim.alpha - weights[1]*1000*vol + sim.rank_m + min(np.prod(sim.eig_m/1000000),3)
         return [sim.hover_status, sim.input_cost, sim.alpha, sim.rank_m, min(np.prod(sim.eig_m/1000000),3), vol]
 
     elif sim.hover_status == "SP":
-        # fit = 0 - 100*sim.input_cost + weights[0]*0.5*sim.alpha - weights[1]*1000*vol
         return [sim.hover_status, sim.input_cost, sim.alpha, None, None, vol]
 
     elif sim.hover_status == "N":
-        # fit = -10 - 1000*vol
         return [sim.hover_status, None, None, None, None, vol]
 
 
@@ -146,16 +167,30 @@ def geno_to_pheno(genotype):
     drone = Phenotype(genotype)
     return drone
 
-def pareto_optimal(population, objective_values):
+def pareto_front(population, objective_values):
     hover_status, _, alpha, _, _, volume = zip(*objective_values)
 
-    static_drone = [drone for drone in population if "ST" in hover_status]
-    static_alpha = [a for a in alpha if "ST" in hover_status]
-    static_vol = [vol for vol in volume if "ST" in hover_status]
+    static_drone = [population[i] for i in range(len(population)) if hover_status[i]=="ST"]
+    static_alpha = [alpha[i] for i in range(len(population)) if hover_status[i]=="ST"]
+    static_vol = [volume[i] for i in range(len(population)) if hover_status[i]=="ST"]
 
-    optimal_drone = []
+    dominated = []
 
-    for (drone, a, vol) in zip(static_drone, static_alpha, static_vol):
-        continue
+    for i, _ in enumerate(static_drone):
+        for j, _ in enumerate(static_drone):
+            if i == j:
+                continue
+            else:
+                if static_alpha[i] < static_alpha[j] and static_vol[i] > static_vol[j]:
+                    dom = True
+                    break
+                else:
+                    dom = False
 
-    return optimal_drone
+        dominated.append(dom)
+
+    pareto_drone = [static_drone[i] for i in range(len(static_drone)) if not dominated[i]]
+    pareto_alpha = [static_alpha[i] for i in range(len(static_drone)) if not dominated[i]]
+    pareto_vol = [static_vol[i] for i in range(len(static_drone)) if not dominated[i]]
+
+    return static_drone, static_alpha, static_vol, dominated
