@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 from dronehover.bodies.standard_bodies import Quadcopter
 
 from simevo.phenotype import Phenotype
-from simevo.evolve import *
+from simevo.algorithms.genetic_algo import *
 
 plt.style.use("custom.mplstyle")
 load_path = "./Logs/series7/run5/"

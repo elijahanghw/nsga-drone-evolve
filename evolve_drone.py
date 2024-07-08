@@ -1,12 +1,13 @@
 import os
 from simevo.population import generate_population_lhs
 from simevo.algorithms.genetic_algo import genetic_algorithm
-from simevo.algorithms.moga import moga
+from simevo.algorithms.moga2 import moga2
+from simevo.algorithms.nsga import nsga
 
-pop_num = 100
-num_gen = 200
+pop_num = 200
+num_gen = 1
 
-root_path = "./Logs/test/moga_test/"
+root_path = "./Logs/nsga_test/"
 
 for i in range(1,2):
     print(f"Run number {i}...")
@@ -15,6 +16,6 @@ for i in range(1,2):
             os.mkdir(save_path)
 
     # Generate initial population
-    population = generate_population_lhs(pop_num)
+    population = generate_population_lhs(pop_num, num_attributes=6)
     # Evolve drone
-    moga(population, num_gen, eval_verbose=0, file_path=save_path)
+    nsga(population, num_gen, eval_verbose=0, file_path=save_path)
