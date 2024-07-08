@@ -34,105 +34,36 @@ def nsga(population, num_gen, verbose=True, eval_verbose=0, file_path=None, para
             with Pool(20, initializer=initializer) as pool: 
                 drones = pool.map(get_drone, population)
                 results = pool.map(objective_functions, drones)
-                hover_status, input_cost, alpha, ctrl, ctrl_eig, volume = zip(*results)
+                hover_status, alpha, ctrl_eig, volume = zip(*results)
 
             num_props = [len(drone.props) for drone in drones]
 
         else:
             hover_status = []
             num_props = []
-            input_cost = []
             volume = []
             alpha = []
-            ctrl = []
             ctrl_eig = []
             for idx, genotype in enumerate(population):
                 drone = get_drone(genotype)
                 num_props.append(len(drone.props))
 
-                _hover_status, _input_cost, _alpha, _ctrl, _ctrl_eig, _volume = objective_functions(drone)
+                _hover_status, _alpha, _ctrl_eig, _volume = objective_functions(drone)
                 hover_status.append(_hover_status)
-                input_cost.append(_input_cost)
                 volume.append(_volume)
                 alpha.append(_alpha)
-                ctrl.append(_ctrl)
                 ctrl_eig.append(_ctrl_eig)
 
-        objective_values = list(zip(hover_status, input_cost, alpha, ctrl, ctrl_eig, volume))
+        objective_values = list(zip(hover_status, alpha, ctrl_eig, volume))
 
         # Save pareto optimal results
-        static_drone, static_alpha, static_vol, static_eig, R, F = non_dominated_sort(population, objective_values)
+        R, F = non_dominated_sort(population, objective_values)
 
-        distance = crowding_distance(static_drone, static_alpha, static_vol, static_eig, F[0])
+        distance = crowding_distance(objective_values, F)
 
         print(distance)
 
-        # if file_path is not None:
-        #     pop_path = os.path.join(file_path, "population", f"population{i}.npy") 
-        #     np.save(pop_path, np.asarray(population))
 
-        #     drone_path = os.path.join(file_path, "drone", f"drone{i}.npy") 
-        #     np.save(drone_path, np.asarray(static_drone))
-
-        #     objectives = pd.DataFrame({"alpha": static_alpha, "volume": static_vol, "ctrl": static_eig, "dominated": dominated})
-        #     objective_path = os.path.join(file_path, "objective", f"objective{i}.csv") 
-        #     objectives.to_csv(objective_path, index=False)
-
-        # while len(new_pop) < pop_size:
-        #     ranked_population, ranked_fitness = moga_fitness(population, objective_values)
-        #     parent1, parent2 = roulette(ranked_population, ranked_fitness)
-        #     child1, child2 = crossover(parent1, parent2)
-        #     child1 = mutate(child1)
-        #     new_pop.append(child1)
-
-        #     if len(new_pop) == pop_size:
-        #         break
-        #     else:
-        #         child2 = mutate(child2)
-        #         new_pop.append(child2)
-
-        # population = new_pop
-
-        # if verbose:
-            # print(f"Generation:{i+1}, Best alpha:{max(pareto_alpha):.2f}, Smallest volume:{min(pareto_vol):.4f}, Most ctrl:{max(pareto_eig):.2f}, Num static:{len(static_drone)}, Num pareto:{len(pareto_drone)} Current elapsed time:{(time()-start_time):.2f} \n")
-
-    # print(f"Finished. Total elapsed time: {time()-start_time}")
-
-def moga_fitness(population, objective_values, verbose=0, parallel=True):
-    hover_status, input_cost, alpha, ctrl, ctrl_eig, volume = zip(*objective_values)
-    fitness = []
-
-    weights = np.random.uniform(low=0, high=1, size=3)
-    weights = weights/np.sum(weights)
-
-    for i, _ in enumerate(population):
-        if hover_status[i] == "ST":
-            hover_score = 10
-            alpha_score = alpha[i]
-            # ctrl_score = ctrl[i]
-            eig_score = ctrl_eig[i]
-        elif hover_status[i] == "SP":
-            hover_score = 0
-            alpha_score = alpha[i]
-            # ctrl_score = 0
-            eig_score = 0
-        elif hover_status[i] == "N":
-            hover_score = -10
-            alpha_score = 0
-            # ctrl_score = 0
-            eig_score = 0
-
-        fitness.append(hover_score + weights[0]*0.5*alpha_score + weights[1]*min(eig_score,5) - weights[2]*200*volume[i])
-
-    # Order population
-    population_ordered = zip(population, fitness)
-    population_ordered = sorted(population_ordered, key=lambda x: x[1], reverse=True)
-    population, fitness = zip(*population_ordered)
-
-    population = list(population)
-    fitness = list(fitness)
-
-    return population, fitness
 
 def objective_functions(drone):
     # Compute size of bounding box using PCA
@@ -165,13 +96,13 @@ def objective_functions(drone):
     sim.compute_hover()
 
     if sim.hover_status == "ST":
-        return [sim.hover_status, sim.input_cost, sim.alpha, sim.rank_m, min(sim.eig_m), vol]
+        return [sim.hover_status, sim.alpha, min(sim.eig_m), vol]
 
     elif sim.hover_status == "SP":
-        return [sim.hover_status, sim.input_cost, sim.alpha, None, None, vol]
+        return [sim.hover_status, sim.alpha, 0, vol]
 
     elif sim.hover_status == "N":
-        return [sim.hover_status, None, None, None, None, vol]
+        return [sim.hover_status, 0, 0, vol]
 
 
 def get_drone(genotype):
@@ -181,32 +112,35 @@ def get_drone(genotype):
 
 
 def non_dominated_sort(population, objective_values):     
-    hover_status, input_cost, alpha, ctrl, ctrl_eig, volume = zip(*objective_values)
-    static_drone = [population[i] for i in range(len(population)) if hover_status[i]=="ST"]
-    static_alpha = [alpha[i] for i in range(len(population)) if hover_status[i]=="ST"]
-    static_vol = [volume[i] for i in range(len(population)) if hover_status[i]=="ST"]
-    static_eig = [ctrl_eig[i] for i in range(len(population)) if hover_status[i]=="ST"]
+    hover_status, alpha, ctrl_eig, volume = zip(*objective_values)
 
-    n = [0 for i in range(len(static_drone))]    # Number of solution dominating solution p
-    S = [[] for i in range(len(static_drone))]     # Set of solution which solution i dominates
-    Rank = [0 for i in range(len(static_drone))]    # Rank of solution
+    static_drone = [i for i in range(len(population)) if hover_status[i]=="ST"]
+    spinning_drone = [i for i in range(len(population)) if hover_status[i]=="SP"]
+    nohover_drone = [i for i in range(len(population)) if hover_status[i]=="N"]
 
+    n = [None for i in range(len(population))]    # Number of solution dominating solution p
+    S = [None for i in range(len(population))]     # Set of solution which solution i dominates
+    rank = [0 for i in range(len(population))]    # Rank of solution
 
     F = []      # List of fronts
     F_1 = []    # Set of solution in pareto front
 
-    for p in range(len(static_drone)):
-        for q in range(len(static_drone)):
-            if static_alpha[p] < static_alpha[q] and static_vol[p] > static_vol[q] and static_eig[p] < static_eig[q]: # p dominated by q
+    # Nondominated sort for static drones
+    for p in static_drone:
+        n[p] = 0
+        S[p] = []
+        for q in static_drone:
+            if alpha[p] < alpha[q] and volume[p] > volume[q] and ctrl_eig[p] < ctrl_eig[q]: # p dominated by q
                 n[p] = n[p] + 1
             else:   # p NOT dominated by q
                 S[p] = list(set().union(S[p], [q]))
 
         if n[p] == 0:
-            Rank[p] = 1
+            rank[p] = 1
             F_1.append(p)
 
     F.append(F_1)
+
     i = 0   # Initialize the front counter
 
     while len(F[i]) != 0:
@@ -215,35 +149,73 @@ def non_dominated_sort(population, objective_values):
             for q in S[p]:
                 n[q] = n[q] - 1
                 if n[q] == 0:
-                    Rank[q] = i + 2
+                    rank[q] = i + 2
                     Q = list(set().union(Q, [q]))
         i = i + 1
         F.append(Q)
-
     F.pop()
 
-    return static_drone, static_alpha, static_vol, static_eig, Rank, F
+    Q_1 = []
+    # Nondominated sort for spinning drones
+    for p in spinning_drone:
+        n[p] = 0
+        S[p] = []
+        for q in spinning_drone:
+            if alpha[p] < alpha[q] and volume[p] > volume[q]: # p dominated by q
+                n[p] = n[p] + 1
+            else:   # p NOT dominated by q
+                S[p] = list(set().union(S[p], [q]))
 
-def crowding_distance(static_drone, static_alpha, static_vol, static_eig, front):
-    # I = [static_drone[i] for i in front]
-    m1 = [static_alpha[i] for i in front]
-    m2 = [static_vol[i] for i in front]
-    m3 = [static_eig[i] for i in front]
-    index = list(range(len(front)))
+        if n[p] == 0:
+            rank[p] = i
+            Q_1.append(p)
 
-    objectives = [m1, m2, m3]
-    distance = [0 for i in range(len(front))]
+    F.append(Q_1)
 
-    for obj in objectives:
-        I_sorted = zip(index, obj)
-        I_sorted = sorted(I_sorted, key=lambda x:x[1])
-        I_sorted, obj_sorted = zip(*I_sorted)
+    while len(F[i]) != 0:
+        Q = []
+        for p in F[i]:
+            for q in S[p]:
+                n[q] = n[q] - 1
+                if n[q] == 0:
+                    rank[q] = i + 2
+                    Q = list(set().union(Q, [q]))
+        i = i + 1
+        F.append(Q)
+    F.pop()
 
-        for i, idx in enumerate(I_sorted):
-            if i == 0 or i == len(front)-1:
-                distance[idx] = float('inf')
+    F.append(nohover_drone)
+
+    max_rank = max(rank)
+
+    for i in nohover_drone:
+        rank[i] = max_rank + 1
+
+    return rank, F
+
+def crowding_distance(objective_values, fronts):
+    hover_status, alpha, ctrl_eig, volume = zip(*objective_values)
+    distance = [0 for i in range(len(hover_status))]
+    for f in fronts:
+        m1 = [alpha[i] for i in f]
+        m2 = [volume[i] for i in f]
+        m3 = [ctrl_eig[i] for i in f]
+
+        objectives = [m1, m2, m3]
+
+        for obj in objectives:
+            if (max(obj) - min(obj)) == 0:
+                pass
             else:
-                distance[idx] = distance[idx] + (obj_sorted[i+1] - obj_sorted[i-1])/(max(obj_sorted) - min(obj_sorted))
+                I_sorted = zip(f, obj)
+                I_sorted = sorted(I_sorted, key=lambda x:x[1])
+                I_sorted, obj_sorted = zip(*I_sorted)
+
+                for i, idx in enumerate(I_sorted):
+                    if i == 0 or i == len(f)-1:
+                        distance[idx] = float('inf')
+                    else:
+                        distance[idx] = distance[idx] + (obj_sorted[i+1] - obj_sorted[i-1])/(max(obj_sorted) - min(obj_sorted))
 
     return distance
 
