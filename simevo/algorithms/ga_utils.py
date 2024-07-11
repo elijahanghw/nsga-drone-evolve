@@ -44,3 +44,23 @@ def roulette(population, fitness):
 
     parent1, parent2 = selections
     return parent1, parent2
+
+def tournament(rank, distance):
+    pop_size = len(rank)
+    s1 = np.random.randint(low=0, high=pop_size)
+    s2 = None
+    while s2 == s1 or s2 == None:
+        s2 = np.random.randint(low=0, high=pop_size)
+
+    if rank[s1] < rank[s2]:
+        return s1
+    
+    elif rank[s2] < rank[s1]:
+        return s2
+    
+    elif rank[s1] == rank[s2]:
+        if distance[s1] >= distance[s2]:
+            return s1
+        else:
+            return s2
+    
