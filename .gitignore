@@ -1,6 +1,8 @@
 **/__pycache__/
 evovenv
-Logs/Archives/
-Logs/test/
-old/
-angle_segment/
+**/figures/
+nsga_standard/Logs_1/
+nsga_standard/Logs_3/
+nsga_standard/Logs_3_backup/
+nsga_standard/history.ipynb
+nsga_standard/control.ipynb
