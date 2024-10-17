@@ -1,7 +1,6 @@
 **/__pycache__/
 evovenv
 **/figures/
-nsga_standard/Logs_1/
 nsga_standard/Logs_3/
 nsga_standard/Logs_3_backup/
 nsga_standard/history.ipynb
