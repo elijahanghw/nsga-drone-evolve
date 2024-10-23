@@ -38,7 +38,7 @@ class Phenotype():
             angleP  = linmap(angle_map, angleG)
             phiP    = linmap(phi_map, phiG)
             thetaP  = linmap(theta_map, thetaG)
-            rotP    = "ccw" if np.sign(rotG) >= 0 else "cw"
+            rotP    = "cw" if np.sign(rotG) >= 0 else "ccw"
 
             loc = [armP *np.cos(angleP), armP *np.sin(angleP), 0]
             # dir = [np.sin(phiP)*np.cos(thetaP), np.sin(phiP)*np.sin(thetaP), -np.cos(phiP), rotP]
@@ -97,7 +97,7 @@ class Phenotype():
                 text_loc = (dir[0:2])/norm(dir[0:2]) * 0.03
                 ax.text(loc[1]+dir[1]+text_loc[1], loc[0]+dir[0]+text_loc[0], f"{np.arccos(-dir[2])/np.pi*180:.1f}"+r"$^{\circ}$", 
                         fontsize=10, color='black', horizontalalignment='center', verticalalignment='center')
-            if prop["dir"][-1] =="ccw":
+            if prop["dir"][-1] =="cw":
                 col = "r"
                 ls = "-"
             else:
@@ -121,15 +121,15 @@ class Phenotype():
         ax.scatter(self.drone.cg[1], self.drone.cg[0], s=200, marker="x", color="red")
         ax.text(self.drone.cg[1], self.drone.cg[0], "C.G.", fontsize=12, color='black')
 
-        ccw = Line2D([0], [0], color='r', label="CCW")
+        ccw = Line2D([0], [0], color='r', label="CW")
         cw = Line2D([0], [0], color='b', linestyle="--", label="CCW")
         arrow = Line2D([0], [0], linestyle=":", color="green")
         
         if legend:
             if quiver:
-                ax.legend([ccw, cw, arrow], ["CCW", "CW", "Direction"], bbox_to_anchor=(1, 0.5))
+                ax.legend([ccw, cw, arrow], ["CW", "CCW", "Direction"], bbox_to_anchor=(1, 0.5))
             else:
-                ax.legend([ccw, cw, arrow], ["CCW", "CW"], bbox_to_anchor=(1, 0.5))
+                ax.legend([ccw, cw, arrow], ["CW", "CCW"], bbox_to_anchor=(1, 0.5))
         ax.set_xlabel("y")
         ax.set_ylabel("x")
 
