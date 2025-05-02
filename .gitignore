@@ -1,7 +1,9 @@
 **/__pycache__/
 evovenv
+**/Logs/
 **/figures/
-nsga_standard/Logs_3/
-nsga_standard/Logs_3_backup/
 nsga_standard/history.ipynb
 nsga_standard/control.ipynb
+
+# config for plotting style
+custom.mplstyle

@@ -2,12 +2,15 @@ import os
 from simevo.population import generate_population_lhs
 from simevo.algorithms.nsga import nsga
 
-pop_num = 100
-num_gen = 200
+pop_num = 500
+num_gen = 2000
 
-root_path = "./nsga_standard/Logs_1/"
+root_path = "./Logs/"
 
-for i in range(1,2):
+if not os.path.exists(root_path):
+    os.makedirs(root_path)
+
+for i in range(1,5):
     print(f"Run number {i}...")
     save_path = os.path.join(root_path, f"run{i}")
     if not os.path.exists(save_path):

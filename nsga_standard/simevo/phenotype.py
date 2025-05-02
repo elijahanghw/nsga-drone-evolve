@@ -116,21 +116,22 @@ class Phenotype():
             ax.plot(r1*np.cos(alpha1+theta)+loc[1], r1*np.sin(alpha1+theta)+loc[0], col, linestyle=ls)
             ax.plot(r2*np.cos(alpha2+theta)+loc[1], r2*np.sin(alpha2+theta)+loc[0], col, linestyle=ls)
         
-            ax.text(loc[1], loc[0], f"{size_label}", fontsize=9, color='black')
+            # ax.text(loc[1], loc[0], f"{size_label}", fontsize=9, color='black')
 
         ax.scatter(self.drone.cg[1], self.drone.cg[0], s=200, marker="x", color="red")
-        ax.text(self.drone.cg[1], self.drone.cg[0], "C.G.", fontsize=12, color='black')
+        # ax.text(self.drone.cg[1], self.drone.cg[0], "C.G.", fontsize=12, color='black')
 
         ccw = Line2D([0], [0], color='r', label="CW")
         cw = Line2D([0], [0], color='b', linestyle="--", label="CCW")
         arrow = Line2D([0], [0], linestyle=":", color="green")
+        cg = Line2D([], [], color="r", marker='x', linestyle='None')
         
         if legend:
             if quiver:
-                ax.legend([ccw, cw, arrow], ["CW", "CCW", "Direction"], bbox_to_anchor=(1, 0.5))
+                ax.legend([ccw, cw, arrow, cg], ["CW", "CCW", "Direction", 'C.G.'], bbox_to_anchor=(1, 0.5))
             else:
-                ax.legend([ccw, cw, arrow], ["CW", "CCW"], bbox_to_anchor=(1, 0.5))
-        ax.set_xlabel("y")
-        ax.set_ylabel("x")
+                ax.legend([ccw, cw, cg], ["CW", "CCW", 'C.G.'], bbox_to_anchor=(1, 0.5))
+        ax.set_xlabel("y (m)")
+        ax.set_ylabel("x (m)")
 
         ax.set_aspect("equal", "box")
