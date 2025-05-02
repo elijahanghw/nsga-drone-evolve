@@ -1,6 +1,8 @@
-# Simple Evolve
+# Multi-objective evolution of drone morphology using NSGA
 
-Scripts that runs simple/barebones drone evolution evaluated on its hovering capabilities.
+Multi-objective evolution of drone morphology evaluated about its hovering and control capabilities.
+
+https://arxiv.org/abs/2502.01197
 
 Algorithm used: NSGA-II
 
