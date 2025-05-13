@@ -6,4 +6,4 @@ https://arxiv.org/abs/2502.01197
 
 Algorithm used: NSGA-II
 
-Requires installation of [dronehover](https://github.com/elijahanghw/drone-hover): run `pip install git+https://github.com/elijahanghw/drone-hover`
+Requires installation of [dronehover](https://github.com/tudelft/drone-hover): run `pip install git+https://github.com/tudelft/drone-hover`
