@@ -118,19 +118,19 @@ class Phenotype():
         
             # ax.text(loc[1], loc[0], f"{size_label}", fontsize=9, color='black')
 
-        ax.scatter(self.drone.cg[1], self.drone.cg[0], s=200, marker="x", color="red")
+        # ax.scatter(self.drone.cg[1], self.drone.cg[0], s=200, marker="x", color="red")
         # ax.text(self.drone.cg[1], self.drone.cg[0], "C.G.", fontsize=12, color='black')
 
         ccw = Line2D([0], [0], color='r', label="CW")
         cw = Line2D([0], [0], color='b', linestyle="--", label="CCW")
         arrow = Line2D([0], [0], linestyle=":", color="green")
-        cg = Line2D([], [], color="r", marker='x', linestyle='None')
+        # cg = Line2D([], [], color="r", marker='x', linestyle='None')
         
         if legend:
             if quiver:
-                ax.legend([ccw, cw, arrow, cg], ["CW", "CCW", "Direction", 'C.G.'], bbox_to_anchor=(1, 0.5))
+                ax.legend([ccw, cw, arrow], ["CW", "CCW", "Direction"])
             else:
-                ax.legend([ccw, cw, cg], ["CW", "CCW", 'C.G.'], bbox_to_anchor=(1, 0.5))
+                ax.legend([ccw, cw], ["CW", "CCW"], bbox_to_anchor=(1, 0.5))
         ax.set_xlabel("y (m)")
         ax.set_ylabel("x (m)")
 
