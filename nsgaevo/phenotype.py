@@ -4,8 +4,8 @@ import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
 from dronehover.bodies.custom_bodies import Custombody
 
-from simevo.utils import linmap, quantmap
-from simevo import min_props, max_props
+from nsgaevo.utils import linmap, quantmap
+from nsgaevo import min_props, max_props
 
 class Phenotype():
     def __init__(self, genotype, min_props=min_props, max_props=max_props):

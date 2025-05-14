@@ -1,7 +1,7 @@
 import numpy as np
 from scipy.stats import qmc
 
-from simevo import min_props, max_props
+from nsgaevo import min_props, max_props
 
 def generate_population_uniform(pop_size, num_attributes):
     population = []

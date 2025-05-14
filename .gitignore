@@ -2,8 +2,8 @@
 evovenv
 **/Logs/
 **/figures/
-nsga_standard/history.ipynb
-nsga_standard/control.ipynb
+history.ipynb
+control.ipynb
 
 # config for plotting style
 custom.mplstyle

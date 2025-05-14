@@ -1,11 +1,11 @@
 import os
-from simevo.population import generate_population_lhs
-from simevo.algorithms.nsga import nsga
+from nsgaevo.population import generate_population_lhs
+from nsgaevo.algorithms.nsga import nsga
 
 pop_num = 500
 num_gen = 2000
 
-root_path = "./Logs/"
+root_path = "./Logs/Test"
 
 if not os.path.exists(root_path):
     os.makedirs(root_path)

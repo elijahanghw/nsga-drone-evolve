@@ -9,8 +9,8 @@ from dronehover.optimization import Hover
 from dronehover.bodies.standard_bodies import Quadcopter
 from scipy.spatial import ConvexHull
 
-from simevo.phenotype import Phenotype
-from simevo.algorithms.ga_utils import *
+from nsgaevo.phenotype import Phenotype
+from nsgaevo.algorithms.ga_utils import *
 
 def initializer():
     signal(SIGINT, lambda: None)

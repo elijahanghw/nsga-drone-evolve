@@ -1,0 +1,3 @@
+[submodule "drone-hover"]
+	path = drone-hover
+	url = git@github.com:elijahanghw/drone-hover.git
