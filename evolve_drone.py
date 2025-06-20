@@ -5,19 +5,19 @@ from nsgaevo.algorithms.nsga import nsga
 pop_num = 500
 num_gen = 2000
 
-root_path = "./Logs/Test"
+root_path = "./Logs/half_motor_full_arm_newman/500x2000/3D"
 
 if not os.path.exists(root_path):
     os.makedirs(root_path)
 
-for i in range(1,5):
+for i in range(1,4):
     print(f"Run number {i}...")
     save_path = os.path.join(root_path, f"run{i}")
     if not os.path.exists(save_path):
             os.mkdir(save_path)
 
     # Generate initial population
-    population = generate_population_lhs(pop_num, num_attributes=5)
+    population = generate_population_lhs(pop_num, num_attributes=6)
     
 
     # Evolve drone

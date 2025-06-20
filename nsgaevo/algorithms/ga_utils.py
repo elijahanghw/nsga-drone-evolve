@@ -12,11 +12,11 @@ def crossover(parent1, parent2):
 
     return child1, child2
 
-def mutate(child, sigma=0.2, mode="rollover"):
+def mutate(child, sigma=0.2, mode="clip"):
     mut = np.random.uniform(0,1)
     if mut <= sigma:
         mut_val = np.random.uniform(-0.2, 0.2, size=child.shape[0])
-        mut_val[0] = np.random.uniform(-0.8, 0.8)
+        mut_val[0] = np.random.uniform(-0.7, 0.7)
 
         child = child + mut_val
 
