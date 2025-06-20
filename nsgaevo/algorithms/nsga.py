@@ -2,20 +2,18 @@ import os
 from time import time
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
+from functools import partial
 from multiprocessing import Pool
 from signal import signal, SIGINT
 from dronehover.optimization import Hover
-from dronehover.bodies.standard_bodies import Quadcopter
 from scipy.spatial import ConvexHull
 
-from nsgaevo.phenotype import Phenotype_2D, Phenotype_3D
 from nsgaevo.algorithms.ga_utils import *
 
 def initializer():
     signal(SIGINT, lambda: None)
 
-def nsga(population, num_gen, verbose=True, eval_verbose=0, file_path=None, parallel=True):
+def nsga(population, num_gen, phenotype_class, verbose=True, eval_verbose=0, file_path=None, parallel=True):
     if file_path is not None:
         if not os.path.exists(os.path.join(file_path, "population")):
             os.mkdir(os.path.join(file_path, "population"))
@@ -26,7 +24,7 @@ def nsga(population, num_gen, verbose=True, eval_verbose=0, file_path=None, para
 
     pop_size = len(population)
 
-    hover, alpha, ctrl, size, num_props = get_objectives(population, parallel=parallel)    
+    hover, alpha, ctrl, size, num_props = get_objectives(population, phenotype_class, parallel=parallel)    
 
     objective_values = list(zip(hover, alpha, ctrl, size))
 
@@ -60,7 +58,7 @@ def nsga(population, num_gen, verbose=True, eval_verbose=0, file_path=None, para
                 child2 = mutate(child2)
                 extended_pop.append(child2)
 
-        extended_hover, extended_alpha, extended_ctrl, extended_size, extended_num_props = get_objectives(extended_pop, parallel=parallel)  
+        extended_hover, extended_alpha, extended_ctrl, extended_size, extended_num_props = get_objectives(extended_pop, phenotype_class, parallel=parallel)  
 
         # Combine population and objectives
         combined_pop = population + extended_pop
@@ -150,10 +148,10 @@ def nsga(population, num_gen, verbose=True, eval_verbose=0, file_path=None, para
         print(f"Generation {gen+1}    Num optimal: {len(combined_fronts[0])}    Max alpha: {optimal_alpha:.2f}    Min vol: {optimal_size:.4f}    Max ctrl:{optimal_ctrl:.2f}   Time elapsed:{time()-start_time:.2f}")
 
 
-def get_objectives(population, parallel=True):
+def get_objectives(population, phenotype_class, parallel=True):
     if parallel:
         with Pool(initializer=initializer) as pool: 
-            drones = pool.map(get_drone, population)
+            drones = pool.map(partial(get_drone, phenotype_class=phenotype_class), population)
             results = pool.map(objective_functions, drones)
             hover, alpha, ctrl, size = zip(*results)
 
@@ -166,7 +164,7 @@ def get_objectives(population, parallel=True):
         alpha = []
         ctrl = []
         for idx, genotype in enumerate(population):
-            drone = get_drone(genotype)
+            drone = get_drone(genotype, phenotype_class)
             num_props.append(len(drone.props))
 
             _hover, _alpha, _ctrl, _size = objective_functions(drone)
@@ -206,9 +204,8 @@ def objective_functions(drone):
         return [sim.hover_status, 0, 0, vol]
 
 
-def get_drone(genotype):
-    phenotype = Phenotype_3D(genotype)
-    # phenotype = Phenotype_2D(genotype)
+def get_drone(genotype, phenotype_class):
+    phenotype = phenotype_class(genotype)
     drone = phenotype.drone
     return drone
 

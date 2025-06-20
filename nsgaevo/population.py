@@ -3,16 +3,14 @@ from scipy.stats import qmc
 
 from nsgaevo import min_props, max_props
 
-def generate_population_uniform(pop_size, num_attributes):
+def generate_population_uniform(pop_size, genotype_len):
     population = []
-    genotype_len = num_attributes*8 + 1
     for _ in range(pop_size):
         genotype = np.random.uniform(low=-1, high=1, size=genotype_len)
         population.append(genotype)
     return population
 
-def generate_population_lhs(pop_size, num_attributes, seed=None):
-    genotype_len = num_attributes*8 + 1
+def generate_population_lhs(pop_size, genotype_len, seed=None):
     sampler = qmc.LatinHypercube(genotype_len, seed=seed)
     samples = sampler.random(pop_size)
     population = qmc.scale(samples, -1 ,1)
