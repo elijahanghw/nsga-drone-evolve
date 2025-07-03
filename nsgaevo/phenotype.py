@@ -123,10 +123,15 @@ class SinglePheno_2D(PhenotypeBase):
         self.generate_props()
         
     def generate_props(self):
+        # length_map     = [0.1, 0.3]
+        # armtheta_map   = [0, 2*np.pi] # Azimuth
+        # motorphi_map   = [0, np.pi/2] # Inclination
+        # motortheta_map = [0, 2*np.pi] # Azimuth
+        
         length_map     = [0.1, 0.3]
-        armtheta_map   = [0, 2*np.pi] # Azimuth
-        motorphi_map   = [0, np.pi/2] # Inclination
-        motortheta_map = [0, 2*np.pi] # Azimuth
+        armtheta_map   = [-np.pi, np.pi] # Azimuth
+        motorphi_map   = [0, 15*np.pi/180] # Inclination
+        motortheta_map = [-np.pi/2, np.pi/2] # Azimuth
         
         self.props = []
         num_props = len(self.genotype) // self.num_att
@@ -145,8 +150,8 @@ class SinglePheno_2D(PhenotypeBase):
             rotP        = "cw" if np.sign(rotG) >= 0 else "ccw"
 
             loc = [lengthP*np.cos(armthetaP), lengthP*np.sin(armthetaP), 0]
-            dir = [np.sin(motorphiP)*np.cos(motorthetaP), np.sin(motorphiP)*np.sin(motorthetaP), -np.cos(motorphiP), rotP]
-            # dir = [np.sin(motorphiP)*np.cos(motorthetaP+armthetaP), np.sin(motorphiP)*np.sin(motorthetaP+armthetaP), -np.cos(motorphiP), rotP]
+            # dir = [np.sin(motorphiP)*np.cos(motorthetaP), np.sin(motorphiP)*np.sin(motorthetaP), -np.cos(motorphiP), rotP]
+            dir = [np.sin(motorphiP)*np.cos(motorthetaP+armthetaP), np.sin(motorphiP)*np.sin(motorthetaP+armthetaP), -np.cos(motorphiP), rotP]
 
             prop = {"loc": loc, "dir": dir, "propsize": 5}
             self.props.append(prop)
@@ -170,10 +175,15 @@ class Phenotype_2D(PhenotypeBase):
 
     def generate_props(self):
         prop_map       = [4, 5, 6, 7, 8]
+        # length_map     = [0.1, 0.3]
+        # armtheta_map   = [0, 2*np.pi] # Azimuth
+        # motorphi_map   = [0, np.pi/2] # Inclination
+        # motortheta_map = [0, 2*np.pi] # Azimuth
+        
         length_map     = [0.1, 0.3]
-        armtheta_map   = [0, 2*np.pi] # Azimuth
-        motorphi_map   = [0, np.pi/2] # Inclination
-        motortheta_map = [0, 2*np.pi] # Azimuth
+        armtheta_map   = [-np.pi, np.pi] # Azimuth
+        motorphi_map   = [0, 15*np.pi/180] # Inclination
+        motortheta_map = [-np.pi/2, np.pi/2] # Azimuth
 
         self.props  = []
         num_props = quantmap(prop_map, self.genotype[0])
@@ -192,8 +202,8 @@ class Phenotype_2D(PhenotypeBase):
             rotP        = "cw" if np.sign(rotG) >= 0 else "ccw"
 
             loc = [lengthP*np.cos(armthetaP), lengthP*np.sin(armthetaP), 0]
-            dir = [np.sin(motorphiP)*np.cos(motorthetaP), np.sin(motorphiP)*np.sin(motorthetaP), -np.cos(motorphiP), rotP]
-            # dir = [np.sin(motorphiP)*np.cos(motorthetaP+armthetaP), np.sin(motorphiP)*np.sin(motorthetaP+armthetaP), -np.cos(motorphiP), rotP]
+            # dir = [np.sin(motorphiP)*np.cos(motorthetaP), np.sin(motorphiP)*np.sin(motorthetaP), -np.cos(motorphiP), rotP]
+            dir = [np.sin(motorphiP)*np.cos(motorthetaP+armthetaP), np.sin(motorphiP)*np.sin(motorthetaP+armthetaP), -np.cos(motorphiP), rotP]
 
             prop = {"loc": loc, "dir": dir, "propsize": 5}
             self.props.append(prop)
@@ -209,61 +219,61 @@ class Phenotype_2D(PhenotypeBase):
         # self.get_inertia()
 
     
-class Phenotype_3D(PhenotypeBase):
-    def __init__(self, genotype, min_props=min_props, max_props=max_props):
-        self.min_props = min_props
-        self.max_props = max_props
-        self.num_att = 6    # arm length, arm angle 1, arm angle 2, phi, theta, rotation
-        self.genotype = genotype
+# class Phenotype_3D(PhenotypeBase):
+#     def __init__(self, genotype, min_props=min_props, max_props=max_props):
+#         self.min_props = min_props
+#         self.max_props = max_props
+#         self.num_att = 6    # arm length, arm angle 1, arm angle 2, phi, theta, rotation
+#         self.genotype = genotype
 
-        self.generate_props()
+#         self.generate_props()
 
-    def generate_props(self):
+#     def generate_props(self):
         
-        prop_map       = [4, 5, 6, 7, 8]
-        length_map     = [0.1, 0.3]
-        armphi_map     = [-np.pi/2, np.pi/2] # Inclination
-        armtheta_map   = [0, 2*np.pi] # Azimuth
-        motorphi_map   = [0, np.pi/2] # Inclination
-        # motorphi_map   = [0, np.pi/4] # Inclination
-        motortheta_map = [0, 2*np.pi] # Azimuth
+#         prop_map       = [4, 5, 6, 7, 8]
+#         length_map     = [0.1, 0.3]
+#         armphi_map     = [-np.pi/2, np.pi/2] # Inclination
+#         armtheta_map   = [0, 2*np.pi] # Azimuth
+#         motorphi_map   = [0, np.pi/2] # Inclination
+#         # motorphi_map   = [0, np.pi/4] # Inclination
+#         motortheta_map = [0, 2*np.pi] # Azimuth
 
-        self.props  = []
-        num_props = quantmap(prop_map, self.genotype[0])
-        # Create mandatory props
-        for i in range(num_props):
-            lengthG     = self.genotype[i*self.num_att + 1]
-            armphiG     = self.genotype[i*self.num_att + 2]
-            armthetaG   = self.genotype[i*self.num_att + 3]
-            motorphiG   = self.genotype[i*self.num_att + 4]
-            motorthetaG = self.genotype[i*self.num_att + 5]
-            rotG        = self.genotype[i*self.num_att + 6]
+#         self.props  = []
+#         num_props = quantmap(prop_map, self.genotype[0])
+#         # Create mandatory props
+#         for i in range(num_props):
+#             lengthG     = self.genotype[i*self.num_att + 1]
+#             armphiG     = self.genotype[i*self.num_att + 2]
+#             armthetaG   = self.genotype[i*self.num_att + 3]
+#             motorphiG   = self.genotype[i*self.num_att + 4]
+#             motorthetaG = self.genotype[i*self.num_att + 5]
+#             rotG        = self.genotype[i*self.num_att + 6]
 
-            lengthP     = linmap(length_map, lengthG)
-            armphiP     = linmap(armphi_map, armphiG)
-            armthetaP   = linmap(armtheta_map, armthetaG)
-            motorphiP   = linmap(motorphi_map, motorphiG)
-            motorthetaP = linmap(motortheta_map, motorthetaG)
-            rotP        = "cw" if np.sign(rotG) >= 0 else "ccw"
+#             lengthP     = linmap(length_map, lengthG)
+#             armphiP     = linmap(armphi_map, armphiG)
+#             armthetaP   = linmap(armtheta_map, armthetaG)
+#             motorphiP   = linmap(motorphi_map, motorphiG)
+#             motorthetaP = linmap(motortheta_map, motorthetaG)
+#             rotP        = "cw" if np.sign(rotG) >= 0 else "ccw"
 
-            loc = [lengthP*np.cos(armphiP)*np.cos(armthetaP), lengthP *np.cos(armphiP)*np.sin(armthetaP), lengthP * np.sin(armphiP)]
-            dir = [np.sin(motorphiP)*np.cos(motorthetaP), np.sin(motorphiP)*np.sin(motorthetaP), -np.cos(motorphiP), rotP]
+#             loc = [lengthP*np.cos(armphiP)*np.cos(armthetaP), lengthP *np.cos(armphiP)*np.sin(armthetaP), lengthP * np.sin(armphiP)]
+#             dir = [np.sin(motorphiP)*np.cos(motorthetaP), np.sin(motorphiP)*np.sin(motorthetaP), -np.cos(motorphiP), rotP]
             
-            # dir = [np.sin(motorphiP)*np.cos(motorthetaP+armthetaP), np.sin(motorphiP)*np.sin(motorthetaP+armthetaP), -np.cos(motorphiP), rotP]
+#             # dir = [np.sin(motorphiP)*np.cos(motorthetaP+armthetaP), np.sin(motorphiP)*np.sin(motorthetaP+armthetaP), -np.cos(motorphiP), rotP]
             
-            # dir = np.array([np.sin(motorphiP)*np.cos(motorthetaP), np.sin(motorphiP)*np.sin(motorthetaP), -np.cos(motorphiP)])    
-            # R = vector_rotation_matrix(armphiP, armthetaP)
+#             # dir = np.array([np.sin(motorphiP)*np.cos(motorthetaP), np.sin(motorphiP)*np.sin(motorthetaP), -np.cos(motorphiP)])    
+#             # R = vector_rotation_matrix(armphiP, armthetaP)
             
-            # dir = R @ dir
-            # dir = dir.tolist()
-            # dir.append(rotP)
+#             # dir = R @ dir
+#             # dir = dir.tolist()
+#             # dir.append(rotP)
 
-            prop = {"loc": loc, "dir": dir, "propsize": 5}
-            self.props.append(prop)
+#             prop = {"loc": loc, "dir": dir, "propsize": 5}
+#             self.props.append(prop)
 
 
-        # Update number of props
-        self.num_props = len(self.props)
-        self.adjust_scale()
+#         # Update number of props
+#         self.num_props = len(self.props)
+#         self.adjust_scale()
 
-        self.drone = Custombody(self.props)
+#         self.drone = Custombody(self.props)

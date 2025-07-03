@@ -4,6 +4,7 @@ evovenv
 **/figures/
 history.ipynb
 control.ipynb
+**.ipynb
 
 # config for plotting style
 custom.mplstyle

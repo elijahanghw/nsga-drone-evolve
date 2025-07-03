@@ -181,21 +181,21 @@ def objective_functions(drone):
     for prop in drone.props:
         points.append(prop["loc"])
     points.append([0, 0, 0])    # Include origin
-    points.append([0.045, 0, 0.1]) # Include points for drone main body
-    points.append([-0.045, 0, 0.1]) # Include points for drone main body
-    points.append([0, 0.045, 0.1]) # Include points for drone main body
-    points.append([0, -0.045, 0.1]) # Include points for drone main body
+    # points.append([0.045, 0, 0.1]) # Include points for drone main body
+    # points.append([-0.045, 0, 0.1]) # Include points for drone main body
+    # points.append([0, 0.045, 0.1]) # Include points for drone main body
+    # points.append([0, -0.045, 0.1]) # Include points for drone main body
     points = np.array(points)
-    hull = ConvexHull(points)
+    hull = ConvexHull(points[:,0:2])
     vol = hull.volume
 
     sim = Hover(drone)
     sim.compute_hover(tol=5e-4)
 
     if sim.hover_status == "ST":
-        # return [sim.hover_status, sim.alpha, min(sim.eig_m), vol]
-        maneuverability = np.exp(np.mean(np.log(sim.eig_m)))
-        return [sim.hover_status, sim.alpha, maneuverability, vol]
+        return [sim.hover_status, sim.alpha, min(sim.eig_m), vol]
+        # maneuverability = np.exp(np.mean(np.log(sim.eig_m)))
+        # return [sim.hover_status, sim.alpha, maneuverability, vol]
 
     elif sim.hover_status == "SP":
         return [sim.hover_status, sim.alpha, 0, vol]

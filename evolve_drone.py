@@ -3,12 +3,12 @@ from nsgaevo.population import generate_population_lhs
 from nsgaevo.algorithms.nsga import nsga
 from nsgaevo.phenotype import *
 
-pop_num = 100
-num_gen = 1000
+pop_num = 120
+num_gen = 2000
 
 num_attributes = 5
 
-root_path = "./Logs/separate_evolution/100x1000/2D"
+root_path = "./Logs/TRO/separate_evolution"
 
 if not os.path.exists(root_path):
     os.makedirs(root_path)
