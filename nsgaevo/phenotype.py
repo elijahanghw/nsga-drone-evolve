@@ -113,7 +113,70 @@ class PhenotypeBase:
             ax.set_ylabel("y (m)")
             
         plt.tight_layout()
-    
+        
+    def plot_drone_2d(self, ax=None, quiver=False, legend=True, limits=None, axis_labels=True):
+        if ax is None:
+            fig, ax = plt.subplots()
+        
+        for i, prop in enumerate(self.props):
+            size_label = prop["propsize"]
+            size = prop["propsize"] * 0.0254
+            loc = np.array(prop["loc"])
+            dir = np.array(prop["dir"][0:3])
+            ax.plot([0, loc[1]], [0, loc[0]], "k")
+            ax.scatter(loc[1], loc[0], c="k")
+            if quiver:
+                dir_norm = dir[0:2] / norm(dir[0:2]) * 0.1
+                ax.arrow(loc[1], loc[0], dir_norm[1], dir_norm[0], color="green", linestyle=":", head_width=0.01, length_includes_head=True)
+                text_loc = dir_norm * 0.3
+                ax.text(loc[1]+dir_norm[1]+text_loc[1], loc[0]+dir_norm[0]+text_loc[0], f"{np.arccos(-dir[2])/np.pi*180:.1f}"+r"$^{\circ}$", 
+                        fontsize=10, color='black', horizontalalignment='center', verticalalignment='center')
+            if prop["dir"][-1] =="cw":
+                col = "r"
+                ls = "-"
+            else:
+                col = "b"
+                ls = "--"
+            
+            theta = np.arctan2(dir[0],dir[1])
+            alpha1 = np.linspace(-np.pi/2, np.pi/2)
+            alpha2 = np.linspace(np.pi/2, 3*np.pi/2)
+
+            a = size/2
+            b = -dir[2]*size/2
+            r1 = a*b/(np.sqrt((b*np.sin(alpha1))**2 + (a*np.cos(alpha1))**2))
+            r2 = a*b/(np.sqrt((b*np.sin(alpha2))**2 + (a*np.cos(alpha2))**2))
+            
+            ax.plot(r1*np.cos(alpha1+theta)+loc[1], r1*np.sin(alpha1+theta)+loc[0], col, linestyle=ls)
+            ax.plot(r2*np.cos(alpha2+theta)+loc[1], r2*np.sin(alpha2+theta)+loc[0], col, linestyle=ls)
+        
+            # ax.text(loc[1], loc[0], f"{size_label}", fontsize=9, color='black')
+
+        # ax.scatter(self.drone.cg[1], self.drone.cg[0], s=200, marker="x", color="red")
+        # ax.text(self.drone.cg[1], self.drone.cg[0], "C.G.", fontsize=12, color='black')
+
+        ccw = Line2D([0], [0], color='r', label="CW")
+        cw = Line2D([0], [0], color='b', linestyle="--", label="CCW")
+        arrow = Line2D([0], [0], linestyle=":", color="green")
+        # cg = Line2D([], [], color="r", marker='x', linestyle='None')
+        
+        if legend:
+            if quiver:
+                ax.legend([ccw, cw, arrow], ["CW", "CCW", "Direction"])
+            else:
+                ax.legend([ccw, cw], ["CW", "CCW"], bbox_to_anchor=(1, 0.5))
+        
+        if axis_labels:
+            ax.set_xlabel("y (m)")
+            ax.set_ylabel("x (m)")
+
+        if limits is not None:
+            ax.set_xlim(-limits[0], limits[0])
+            ax.set_ylim(-limits[1], limits[1])
+
+        ax.set_aspect("equal", "box")
+        
+        
 
 class SinglePheno_2D(PhenotypeBase):
     def __init__(self, genotype):
